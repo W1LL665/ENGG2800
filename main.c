@@ -18,7 +18,8 @@
  *              Version 2.0 -> applicable for more than 1 display
  */
 #include "lib/st7735.h"
-
+#include <avr/io.h>
+#include <ctype.h>
 /**
  * 
  * @desc Draws a smiley face
@@ -73,21 +74,7 @@ void ST7735_DrawSad (struct st7735 * lcd, uint8_t x, uint8_t y, uint16_t color) 
 }
 
 
-/**
- * @desc    Main function
- *
- * @param   Void
- *
- * @return  Void
- */
-int main (void)
-{
-	  //for (int i=0; i<20000; i++) {
-		//  PORTC |= (1<<5);
-	  //}
-	  //for (int i=0; i<20000; i++) {
-	//	  PORTC &= ~(1<<5);
-	  //}
+int LCD_Control (void) {
   // start
   uint8_t start = 0;
   // end
@@ -128,6 +115,48 @@ int main (void)
   //}
   ST7735_DrawSmiley (&lcd1, 130, 40, WHITE);
   ST7735_DrawSad(&lcd1, 100, 40, WHITE);
-
+  
   return 0;
+}
+
+void Capital_Letter_Comms()
+{
+	// doubles USART transmission speed to allow for higher and more accurate baud rate
+	UCSR0A = (1<<U2X0);
+	// sets baud rate to 9600
+	UBRR0 = 12;
+	
+	// enable receiver and transmitter
+	UCSR0B = (1<<RXEN0)|(1<<TXEN0);
+
+	while(1){
+		// waits for data to be received
+		while(!(UCSR0A & (1 << RXC0)));
+		
+		// read the data byte from the the receiver buffer
+		char data = UDR0;
+		
+		// wait for the transmitting buffer to be empty
+		while(!(UCSR0A & (1 << UDRE0)));
+		
+		// make the data into capital letters
+		data = toupper(data);
+		//send back data
+		UDR0 = data;
+	}
+}
+
+
+/**
+ * @desc    Main function
+ *
+ * @param   Void
+ *
+ * @return  Void
+ */
+
+int main (void){
+	LCD_Control();
+	Capital_Letter_Comms();
+	return 0;
 }
